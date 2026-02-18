@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Obertini Properties Tenant Portal</title>
+</head>
+<body>
+  <h1>Welcome to Obertini Properties Tenant Portal</h1>
+
+  <!-- Tenant login form -->
+  <h2>Tenant Portal Login</h2>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <button onclick="signup()">Sign Up</button>
+  <p id="message"></p>
+
+  <!-- Firebase script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB3kErIN60aZvBsiS5OVZOY1cyBLM0x5d8",
+      authDomain: "obertini-properties-portal.firebaseapp.com",
+      projectId: "obertini-properties-portal",
+      storageBucket: "obertini-properties-portal.firebasestorage.app",
+      messagingSenderId: "421383813700",
+      appId: "1:421383813700:web:f4c34678adf4e3a7435a11"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    function signup() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => document.getElementById("message").innerText = "Account created!")
+        .catch((error) => document.getElementById("message").innerText = error.message);
+    }
+
+    function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => document.getElementById("message").innerText = "Logged in!")
+        .catch((error) => document.getElementById("message").innerText = error.message);
+    }
+  </script>
+</body>
+</html>
