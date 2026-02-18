@@ -20,31 +20,46 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
+    // Correct Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyB3kErIN60aZvBsiS5OVZOY1cyBLM0x5d8",
       authDomain: "obertini-properties-portal.firebaseapp.com",
       projectId: "obertini-properties-portal",
-      storageBucket: "obertini-properties-portal.firebasestorage.app",
+      storageBucket: "obertini-properties-portal.appspot.com",
       messagingSenderId: "421383813700",
       appId: "1:421383813700:web:f4c34678adf4e3a7435a11"
     };
 
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    window.signup = function () {
+    // Make functions global so buttons can access them
+    window.signup = function() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        document.getElementById("message").innerText = "Please enter email and password.";
+        return;
+      }
+
       createUserWithEmailAndPassword(auth, email, password)
         .then(() => document.getElementById("message").innerText = "Account created!")
         .catch((error) => document.getElementById("message").innerText = error.message);
     }
 
-    window.login = function () {
+    window.login = function() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        document.getElementById("message").innerText = "Please enter email and password.";
+        return;
+      }
+
       signInWithEmailAndPassword(auth, email, password)
-        .then(() => document.getElementById("message").innerText = "Logged in!")
+        .then(() => document.getElementById("message").innerText = "Logged in successfully!")
         .catch((error) => document.getElementById("message").innerText = error.message);
     }
   </script>
