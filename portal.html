@@ -1,67 +1,153 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Obertini Properties Tenant Portal</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    h1 { text-align: center; background-color: #004080; color: white; padding: 20px 0; margin:0; }
+    nav { background-color: #0066cc; padding: 10px; text-align: center; }
+    nav button { margin: 0 10px; padding: 10px 15px; background-color: #004080; color: white; border: none; cursor: pointer; }
+    nav button:hover { background-color: #003366; }
+    .tab { display: none; padding: 20px; }
+    #authSection { padding: 20px; text-align: center; }
+    input, textarea { display: block; margin: 10px auto; padding: 8px; width: 300px; }
+    button { cursor: pointer; }
+    #message { color: red; font-weight: bold; }
+  </style>
 </head>
 <body>
-  <h1>Welcome to Obertini Properties Tenant Portal</h1>
 
-  <!-- Tenant login form -->
-  <h2>Tenant Portal Login</h2>
+<h1>Obertini Properties Tenant Portal</h1>
+
+<!-- Login / Signup -->
+<div id="authSection">
   <input type="email" id="email" placeholder="Email">
   <input type="password" id="password" placeholder="Password">
   <button onclick="login()">Login</button>
   <button onclick="signup()">Sign Up</button>
   <p id="message"></p>
+</div>
 
-  <!-- Firebase script -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+<!-- Dashboard Navigation -->
+<nav id="dashboardNav" style="display:none;">
+  <button onclick="showTab('payRentTab')">Pay Rent</button>
+  <button onclick="showTab('maintenanceTab')">Maintenance</button>
+  <button onclick="showTab('viewLeaseTab')">View Lease</button>
+  <button onclick="showTab('signLeaseTab')">Sign Lease</button>
+  <button onclick="logout()">Logout</button>
+</nav>
 
-    // Correct Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyB3kErIN60aZvBsiS5OVZOY1cyBLM0x5d8",
-      authDomain: "obertini-properties-portal.firebaseapp.com",
-      projectId: "obertini-properties-portal",
-      storageBucket: "obertini-properties-portal.appspot.com",
-      messagingSenderId: "421383813700",
-      appId: "1:421383813700:web:f4c34678adf4e3a7435a11"
-    };
+<!-- Tabs -->
+<div id="payRentTab" class="tab">
+  <h2>Pay Rent</h2>
+  <button onclick="payRent()">Pay Rent Now</button>
+</div>
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+<div id="maintenanceTab" class="tab">
+  <h2>Submit Maintenance Request</h2>
+  <textarea id="maintenanceDetails" placeholder="Describe your issue"></textarea>
+  <button onclick="submitMaintenance()">Submit</button>
+</div>
 
-    // Make functions global so buttons can access them
-    window.signup = function() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+<div id="viewLeaseTab" class="tab">
+  <h2>Your Lease</h2>
+  <p>Lease details will appear here.</p>
+</div>
 
-      if (!email || !password) {
-        document.getElementById("message").innerText = "Please enter email and password.";
-        return;
-      }
+<div id="signLeaseTab" class="tab">
+  <h2>Sign New Lease</h2>
+  <p>New lease signing functionality goes here.</p>
+</div>
 
-      createUserWithEmailAndPassword(auth, email, password)
-        .then(() => document.getElementById("message").innerText = "Account created!")
-        .catch((error) => document.getElementById("message").innerText = error.message);
-    }
+<!-- Firebase & Stripe Scripts -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-    window.login = function() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyB3kErIN60aZvBsiS5OVZOY1cyBLM0x5d8",
+  authDomain: "obertini-properties-portal.firebaseapp.com",
+  projectId: "obertini-properties-portal",
+  storageBucket: "obertini-properties-portal.appspot.com",
+  messagingSenderId: "421383813700",
+  appId: "1:421383813700:web:f4c34678adf4e3a7435a11"
+};
 
-      if (!email || !password) {
-        document.getElementById("message").innerText = "Please enter email and password.";
-        return;
-      }
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-      signInWithEmailAndPassword(auth, email, password)
-        .then(() => document.getElementById("message").innerText = "Logged in successfully!")
-        .catch((error) => document.getElementById("message").innerText = error.message);
-    }
-  </script>
+// DOM Elements
+const authSection = document.getElementById("authSection");
+const dashboardNav = document.getElementById("dashboardNav");
+const message = document.getElementById("message");
+const tabs = document.querySelectorAll('.tab');
+
+// Show/hide tabs based on login
+onAuthStateChanged(auth, user => {
+  if(user) {
+    authSection.style.display = "none";
+    dashboardNav.style.display = "block";
+    showTab('payRentTab'); // default tab after login
+  } else {
+    authSection.style.display = "block";
+    dashboardNav.style.display = "none";
+    hideAllTabs();
+  }
+});
+
+function hideAllTabs() {
+  tabs.forEach(tab => tab.style.display = 'none');
+}
+
+function showTab(tabId) {
+  hideAllTabs();
+  document.getElementById(tabId).style.display = 'block';
+}
+
+// Firebase Auth Functions
+window.signup = function() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  if(!email || !password) { message.innerText="Please enter email and password."; return; }
+  createUserWithEmailAndPassword(auth, email, password)
+    .then(()=>message.innerText="Account created!")
+    .catch(err=>message.innerText=err.message);
+}
+
+window.login = function() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  if(!email || !password) { message.innerText="Please enter email and password."; return; }
+  signInWithEmailAndPassword(auth, email, password)
+    .then(()=>message.innerText="Logged in!")
+    .catch(err=>message.innerText=err.message);
+}
+
+window.logout = function() { signOut(auth); }
+
+// Pay Rent Function
+window.payRent = async function() {
+  try {
+    const res = await fetch('/api/create-checkout-session', { method: 'POST' });
+    const data = await res.json();
+    // ⚠️ REPLACE WITH YOUR STRIPE PUBLISHABLE KEY
+    const stripe = Stripe('pk_test_51T2JrFRpNMZCmY3rxInmimKUuQZ7FGZc5EFdn9pTsLtFYRxoF68GLiIHf5yqCNMAxoU825vaui6IhSCcuGNDeo3Z0058hSu3x7'); 
+    await stripe.redirectToCheckout({ sessionId: data.id });
+  } catch(err) {
+    alert("Error starting checkout: " + err.message);
+  }
+}
+
+// Maintenance placeholder
+window.submitMaintenance = function() {
+  const details = document.getElementById("maintenanceDetails").value;
+  if(!details) { alert("Please describe your maintenance request."); return; }
+  alert("Maintenance request submitted:\n" + details);
+}
+</script>
+
 </body>
 </html>
