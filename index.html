@@ -1,11 +1,44 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Obertini Properties</title>
+  <meta charset="UTF-8">
+  <title>Obertini Properties</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; }
+    nav { display: flex; justify-content: space-between; background: #0070f3; padding: 10px 20px; color: white; }
+    nav .logo { font-weight: bold; font-size: 20px; }
+    nav .menu { display: flex; gap: 20px; align-items: center; }
+    nav a { color: white; text-decoration: none; }
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-content { display: none; position: absolute; background-color: white; min-width: 200px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 1; }
+    .dropdown-content a { color: black; padding: 12px 16px; text-decoration: none; display: block; }
+    .dropdown:hover .dropdown-content { display: block; }
+    .container { padding: 20px; }
+  </style>
 </head>
 <body>
-    <h1>Welcome to Obertini Properties!</h1>
-    <p>Your website is coming soon 🚀</p>
+  <!-- Navbar -->
+  <nav>
+    <div class="logo">Obertini Properties</div>
+    <div class="menu">
+      <div class="dropdown">
+        <a href="#">Available Properties</a>
+        <div class="dropdown-content">
+          <a href="#">123 Main St - Apartment 1</a>
+          <a href="#">456 Oak St - Apartment 2</a>
+          <a href="#">789 Pine St - Apartment 3</a>
+        </div>
+      </div>
+      <a href="portal.html">Login</a>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <div class="container">
+    <h1>Welcome to Obertini Properties</h1>
+    <p>We offer high-quality rental properties with easy online management for tenants.</p>
+    <p>Explore available apartments using the drop-down menu above.</p>
+  </div>
 </body>
 </html>
+
