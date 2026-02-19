@@ -1,0 +1,8 @@
+{
+  "name": "obertini-properties",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "stripe": "^14.0.0"
+  }
+}
