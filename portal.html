@@ -288,7 +288,7 @@
       }
       currentUser = user;
       $("userLine").textContent = user.email ? user.email : "Signed in";
-      $("uidPill").textContent = `UID: ${user.uid}`;
+      $("uidPill").style.display = "none";
       initLeaseLink();
     });
 
