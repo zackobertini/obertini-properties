@@ -21,7 +21,7 @@
       margin:0;
       font-family: Arial, sans-serif;
       background: var(--bg);
-      height:100vh;
+      min-height:100vh;
       display:flex;
       justify-content:center;
       align-items:center;
@@ -30,7 +30,7 @@
     }
     .app{
       width:min(1000px, 100%);
-      height:min(650px, 100vh);
+      height:min(650px, 92vh);
       background:var(--card);
       border:1px solid var(--border);
       border-radius:12px;
@@ -122,6 +122,9 @@
       background:#111827;
       color:#fff;
     }
+    .btn.secondary{
+      background:#0f172a;
+    }
     .btn:disabled{
       opacity:.6;
       cursor:not-allowed;
@@ -130,6 +133,7 @@
       margin-top:10px;
       font-size:14px;
       font-weight:700;
+      min-height:18px;
     }
     .status.err{ color:var(--danger); }
     .status.ok{ color:var(--success); }
@@ -174,11 +178,14 @@
         <!-- PAY RENT -->
         <div class="panel section active" id="sec-rent">
           <h2>Pay Rent</h2>
-          <div class="small">Click below to pay rent via Stripe Checkout.</div>
+          <div class="small">Choose a payment method. Card fees are higher than Bank (ACH).</div>
+
           <div style="margin-top:14px;">
-            <button class="btn" id="payBtn">Pay Rent Now</button>
-            <div class="status" id="payStatus"></div>
+            <button class="btn" id="payCardBtn">Pay with Card</button>
+            <button class="btn secondary" id="payAchBtn" style="margin-left:10px;">Pay with Bank (ACH)</button>
           </div>
+
+          <div class="status" id="payStatus"></div>
         </div>
 
         <!-- MAINTENANCE -->
@@ -214,7 +221,7 @@
         <!-- VIEW LEASE -->
         <div class="panel section" id="sec-lease">
           <h2>View Lease</h2>
-          <div class="small">Add your lease PDF link (later we can load it from Firestore).</div>
+          <div class="small">If you have a lease PDF link, add it in the code (or we can load it from Firestore later).</div>
 
           <div style="margin-top:12px;">
             <a id="leaseLink" href="#" target="_blank" rel="noopener noreferrer" style="display:none; font-weight:900;">
@@ -227,7 +234,7 @@
         <!-- SIGN LEASE -->
         <div class="panel section" id="sec-sign">
           <h2>Sign Lease</h2>
-          <div class="small">Basic typed signature (we can upgrade to DocuSign later).</div>
+          <div class="small">Basic typed signature (we can upgrade later).</div>
 
           <label for="sigName">Full Name</label>
           <input id="sigName" placeholder="Type your full legal name" />
@@ -247,7 +254,7 @@
 
   <script type="module">
     // =========================
-    // 1) FIREBASE CONFIG (PASTE HERE)
+    // 1) FIREBASE CONFIG
     // Firebase Console → Project settings → Your apps (Web) → Config
     // =========================
     const firebaseConfig = {
@@ -261,8 +268,6 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-    // Optional Firestore (for maintenance/signature). If you don’t want DB storage yet, tell me.
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const app = initializeApp(firebaseConfig);
@@ -288,7 +293,7 @@
       }
       currentUser = user;
       $("userLine").textContent = user.email ? user.email : "Signed in";
-      $("uidPill").style.display = "none";
+      $("uidPill").style.display = "none"; // hide UID
       initLeaseLink();
     });
 
@@ -323,63 +328,50 @@
     });
 
     // =========================
-    // 5) PAY RENT (Stripe Checkout)
-    // Handles either { url } OR legacy { id }
+    // 5) PAY RENT (Card or ACH)
     // =========================
-    $("payBtn").addEventListener("click", async () => {
+    async function startCheckout(method) {
       try {
-        $("payBtn").disabled = true;
         setStatus($("payStatus"), "Starting payment…", true);
+        $("payCardBtn").disabled = true;
+        $("payAchBtn").disabled = true;
 
         const resp = await fetch("/api/create-checkout-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            // Optional data for future use
+            method, // "card" or "ach"
             uid: currentUser?.uid || null,
-            email: currentUser?.email || null
-          })
+            email: currentUser?.email || null,
+          }),
         });
 
-        // If the API fails, show the real error
-        const text = await resp.text();
-        let data = {};
-        try { data = JSON.parse(text); } catch { /* keep {} */ }
+        const data = await resp.json();
 
         if (!resp.ok) {
-          const msg = data?.error || `Server error (${resp.status}).`;
-          setStatus($("payStatus"), msg, false);
-          $("payBtn").disabled = false;
+          setStatus($("payStatus"), data?.error || `Server error (${resp.status})`, false);
+          $("payCardBtn").disabled = false;
+          $("payAchBtn").disabled = false;
           return;
         }
 
-        // Preferred: API returns URL
         if (data?.url) {
           window.location.href = data.url;
           return;
         }
 
-        // Legacy: API returns { id } (session ID)
-        if (data?.id) {
-          // If your API returns only the ID, we can't redirect without Stripe.js OR a URL.
-          // So we show a helpful message telling you exactly what to change.
-          setStatus(
-            $("payStatus"),
-            "Payment session created but no URL returned. Update your API to return { url: session.url }.",
-            false
-          );
-          $("payBtn").disabled = false;
-          return;
-        }
-
-        setStatus($("payStatus"), "Failed to initiate payment. Please try again.", false);
-        $("payBtn").disabled = false;
-
+        setStatus($("payStatus"), "No checkout URL returned.", false);
+        $("payCardBtn").disabled = false;
+        $("payAchBtn").disabled = false;
       } catch (e) {
         setStatus($("payStatus"), "Failed to initiate payment. Please try again.", false);
-        $("payBtn").disabled = false;
+        $("payCardBtn").disabled = false;
+        $("payAchBtn").disabled = false;
       }
-    });
+    }
+
+    $("payCardBtn").addEventListener("click", () => startCheckout("card"));
+    $("payAchBtn").addEventListener("click", () => startCheckout("ach"));
 
     // =========================
     // 6) MAINTENANCE (Firestore)

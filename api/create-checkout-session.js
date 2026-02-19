@@ -7,28 +7,63 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ✅ DO NOT hardcode keys — use Vercel env var
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: "2022-11-15",
     });
 
+    const { method, email, uid } = req.body || {};
+    const payMethod = method === "ach" ? "ach" : "card";
+
     // ✅ Set your NET rent here (what you want to receive)
     const netRentCents = 100000; // $1000.00
 
-    // ✅ Stripe card fee estimate (US): 2.9% + 30¢
-    const percentFee = 0.029;
-    const fixedFeeCents = 30;
+    // Fee models (typical US; adjust if your Stripe pricing differs)
+    // Card: 2.9% + 30¢
+    // ACH: 0.8% capped at $5 (i.e., 500 cents)
+    let grossCents = netRentCents;
+    let processingFeeCents = 0;
 
-    // ✅ Gross up so you still net the rent after fees
-    // gross = ceil((net + fixed) / (1 - percent))
-    const grossCents = Math.ceil((netRentCents + fixedFeeCents) / (1 - percentFee));
-    const processingFeeCents = grossCents - netRentCents;
+    if (payMethod === "card") {
+      const percentFee = 0.029;
+      const fixedFeeCents = 30;
+      grossCents = Math.ceil((netRentCents + fixedFeeCents) / (1 - percentFee));
+      processingFeeCents = grossCents - netRentCents;
+    } else {
+      const achPercent = 0.008;
+      const achCapCents = 500;
+      processingFeeCents = Math.min(Math.ceil(netRentCents * achPercent), achCapCents);
+      grossCents = netRentCents + processingFeeCents;
+    }
 
     const origin = req.headers.origin || "https://www.obertiniproperties.com";
 
+    const payment_method_types =
+      payMethod === "card" ? ["card"] : ["us_bank_account"];
+
+    const payment_method_options =
+      payMethod === "ach"
+        ? {
+            us_bank_account: {
+              // Stripe Checkout will use Financial Connections for bank auth
+              financial_connections: { permissions: ["payment_method"] },
+            },
+          }
+        : undefined;
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
+      payment_method_types,
+      ...(payment_method_options ? { payment_method_options } : {}),
+
+      // optional but helpful:
+      customer_email: typeof email === "string" ? email : undefined,
+      metadata: {
+        uid: uid || "",
+        pay_method: payMethod,
+        net_rent_cents: String(netRentCents),
+        fee_cents: String(processingFeeCents),
+      },
+
       line_items: [
         {
           price_data: {
@@ -41,20 +76,22 @@ export default async function handler(req, res) {
         {
           price_data: {
             currency: "usd",
-            product_data: { name: "Processing Fee" },
+            product_data: {
+              name: payMethod === "card" ? "Card Processing Fee" : "ACH Processing Fee",
+            },
             unit_amount: processingFeeCents,
           },
           quantity: 1,
         },
       ],
+
       success_url: `${origin}/portal.html?paid=1`,
       cancel_url: `${origin}/portal.html?paid=0`,
     });
 
-    // ✅ IMPORTANT: return the URL so the browser can redirect
     return res.status(200).json({ url: session.url });
   } catch (err) {
     console.error("Stripe checkout session error:", err);
-    return res.status(500).json({ error: "Failed to create Stripe checkout session" });
+    return res.status(500).json({ error: err?.message || "Failed to create checkout session" });
   }
 }
