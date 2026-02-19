@@ -1,152 +1,160 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Obertini Properties Tenant Portal</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-    h1 { text-align: center; background-color: #004080; color: white; padding: 20px 0; margin:0; }
-    nav { background-color: #0066cc; padding: 10px; text-align: center; }
-    nav button { margin: 0 10px; padding: 10px 15px; background-color: #004080; color: white; border: none; cursor: pointer; }
-    nav button:hover { background-color: #003366; }
-    .tab { display: none; padding: 20px; }
-    #authSection { padding: 20px; text-align: center; }
-    input, textarea { display: block; margin: 10px auto; padding: 8px; width: 300px; }
-    button { cursor: pointer; }
-    #message { color: red; font-weight: bold; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    nav { margin-bottom: 20px; }
+    nav button { margin-right: 10px; padding: 10px 15px; cursor: pointer; }
+    section { display: none; margin-top: 20px; }
+    section.active { display: block; }
+    #message { margin-top: 15px; color: green; }
+    #error { margin-top: 15px; color: red; }
   </style>
 </head>
 <body>
+  <h1>Welcome to Obertini Properties Tenant Portal</h1>
 
-<h1>Obertini Properties Tenant Portal</h1>
+  <!-- Tenant login form -->
+  <div id="login-section">
+    <h2>Tenant Login / Sign Up</h2>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <button onclick="signup()">Sign Up</button>
+    <p id="login-message"></p>
+  </div>
 
-<!-- Login / Signup -->
-<div id="authSection">
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
-  <button onclick="login()">Login</button>
-  <button onclick="signup()">Sign Up</button>
-  <p id="message"></p>
-</div>
+  <!-- Tenant dashboard -->
+  <div id="dashboard" style="display:none;">
+    <nav>
+      <button onclick="showTab('pay-rent')">Pay Rent</button>
+      <button onclick="showTab('maintenance')">Maintenance Request</button>
+      <button onclick="showTab('view-lease')">View Lease</button>
+      <button onclick="showTab('sign-lease')">Sign New Lease</button>
+    </nav>
 
-<!-- Dashboard Navigation -->
-<nav id="dashboardNav" style="display:none;">
-  <button onclick="showTab('payRentTab')">Pay Rent</button>
-  <button onclick="showTab('maintenanceTab')">Maintenance</button>
-  <button onclick="showTab('viewLeaseTab')">View Lease</button>
-  <button onclick="showTab('signLeaseTab')">Sign Lease</button>
-  <button onclick="logout()">Logout</button>
-</nav>
+    <section id="pay-rent">
+      <h2>Pay Rent</h2>
+      <button onclick="payRent()">Pay Rent Now</button>
+      <p id="message"></p>
+      <p id="error"></p>
+    </section>
 
-<!-- Tabs -->
-<div id="payRentTab" class="tab">
-  <h2>Pay Rent</h2>
-  <button onclick="payRent()">Pay Rent Now</button>
-</div>
+    <section id="maintenance">
+      <h2>Maintenance Request</h2>
+      <p>Feature coming soon!</p>
+    </section>
 
-<div id="maintenanceTab" class="tab">
-  <h2>Submit Maintenance Request</h2>
-  <textarea id="maintenanceDetails" placeholder="Describe your issue"></textarea>
-  <button onclick="submitMaintenance()">Submit</button>
-</div>
+    <section id="view-lease">
+      <h2>View Lease</h2>
+      <p>Feature coming soon!</p>
+    </section>
 
-<div id="viewLeaseTab" class="tab">
-  <h2>Your Lease</h2>
-  <p>Lease details will appear here.</p>
-</div>
+    <section id="sign-lease">
+      <h2>Sign New Lease</h2>
+      <p>Feature coming soon!</p>
+    </section>
+  </div>
 
-<div id="signLeaseTab" class="tab">
-  <h2>Sign New Lease</h2>
-  <p>New lease signing functionality goes here.</p>
-</div>
+  <!-- Firebase script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-<!-- Firebase & Stripe Scripts -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
 
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyB3kErIN60aZvBsiS5OVZOY1cyBLM0x5d8",
-  authDomain: "obertini-properties-portal.firebaseapp.com",
-  projectId: "obertini-properties-portal",
-  storageBucket: "obertini-properties-portal.appspot.com",
-  messagingSenderId: "421383813700",
-  appId: "1:421383813700:web:f4c34678adf4e3a7435a11"
-};
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+    // Login function
+    window.login = function() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const loginMsg = document.getElementById("login-message");
 
-// DOM Elements
-const authSection = document.getElementById("authSection");
-const dashboardNav = document.getElementById("dashboardNav");
-const message = document.getElementById("message");
-const tabs = document.querySelectorAll('.tab');
+      if (!email || !password) {
+        loginMsg.innerText = "Please enter email and password.";
+        return;
+      }
 
-// Show/hide tabs based on login
-onAuthStateChanged(auth, user => {
-  if(user) {
-    authSection.style.display = "none";
-    dashboardNav.style.display = "block";
-    showTab('payRentTab'); // default tab after login
-  } else {
-    authSection.style.display = "block";
-    dashboardNav.style.display = "none";
-    hideAllTabs();
-  }
-});
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => {
+          loginMsg.innerText = "Logged in successfully!";
+          document.getElementById("login-section").style.display = "none";
+          document.getElementById("dashboard").style.display = "block";
+          showTab('pay-rent'); // default tab
+        })
+        .catch((error) => { loginMsg.innerText = error.message; });
+    };
 
-function hideAllTabs() {
-  tabs.forEach(tab => tab.style.display = 'none');
-}
+    // Signup function
+    window.signup = function() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const loginMsg = document.getElementById("login-message");
 
-function showTab(tabId) {
-  hideAllTabs();
-  document.getElementById(tabId).style.display = 'block';
-}
+      if (!email || !password) {
+        loginMsg.innerText = "Please enter email and password.";
+        return;
+      }
 
-// Firebase Auth Functions
-window.signup = function() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  if(!email || !password) { message.innerText="Please enter email and password."; return; }
-  createUserWithEmailAndPassword(auth, email, password)
-    .then(()=>message.innerText="Account created!")
-    .catch(err=>message.innerText=err.message);
-}
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => loginMsg.innerText = "Account created! You can now log in.")
+        .catch((error) => loginMsg.innerText = error.message);
+    };
 
-window.login = function() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  if(!email || !password) { message.innerText="Please enter email and password."; return; }
-  signInWithEmailAndPassword(auth, email, password)
-    .then(()=>message.innerText="Logged in!")
-    .catch(err=>message.innerText=err.message);
-}
+    // Tab switching
+    function showTab(tabId) {
+      document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      document.getElementById('message').innerText = '';
+      document.getElementById('error').innerText = '';
+    }
 
-window.logout = function() { signOut(auth); }
+    // Stripe Pay Rent function
+    async function payRent() {
+      const message = document.getElementById('message');
+      const error = document.getElementById('error');
 
-// Pay Rent Function
-window.payRent = async function() {
-  try {
-    const res = await fetch('/api/create-checkout-session', { method: 'POST' });
-    const data = await res.json();
-    const stripe = Stripe('pk_test_51T2JrFRpNMZCmY3rxInmimKUuQZ7FGZc5EFdn9pTsLtFYRxoF68GLiIHf5yqCNMAxoU825vaui6IhSCcuGNDeo3Z0058hSu3x7'); 
-    await stripe.redirectToCheckout({ sessionId: data.id });
-  } catch(err) {
-    alert("Error starting checkout: " + err.message);
-  }
-}
+      message.innerText = '';
+      error.innerText = '';
 
-// Maintenance placeholder
-window.submitMaintenance = function() {
-  const details = document.getElementById("maintenanceDetails").value;
-  if(!details) { alert("Please describe your maintenance request."); return; }
-  alert("Maintenance request submitted:\n" + details);
-}
-</script>
+      try {
+        // ⚠️ Replace with your Stripe publishable key
+        const stripe = Stripe('pk_test_51T2JrFRpNMZCmY3rxInmimKUuQZ7FGZc5EFdn9pTsLtFYRxoF68GLiIHf5yqCNMAxoU825vaui6IhSCcuGNDeo3Z0058hSu3x7');
 
+        const response = await fetch('/api/create-checkout-session', { method: 'POST' });
+        const data = await response.json();
+
+        if (data.error) {
+          error.innerText = data.error;
+          return;
+        }
+
+        const result = await stripe.redirectToCheckout({ sessionId: data.id });
+        if (result.error) {
+          error.innerText = result.error.message;
+        }
+      } catch (err) {
+        console.error(err);
+        error.innerText = 'Failed to initiate payment. Please try again.';
+      }
+    }
+
+    window.payRent = payRent;
+  </script>
+
+  <!-- Stripe JS -->
+  <script src="https://js.stripe.com/v3/"></script>
 </body>
 </html>
