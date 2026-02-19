@@ -1,44 +1,153 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Obertini Properties</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin:0; padding:0; }
-    nav { display: flex; justify-content: space-between; background: #0070f3; padding: 10px 20px; color: white; }
-    nav .logo { font-weight: bold; font-size: 20px; }
-    nav .menu { display: flex; gap: 20px; align-items: center; }
-    nav a { color: white; text-decoration: none; }
-    .dropdown { position: relative; display: inline-block; }
-    .dropdown-content { display: none; position: absolute; background-color: white; min-width: 200px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 1; }
-    .dropdown-content a { color: black; padding: 12px 16px; text-decoration: none; display: block; }
-    .dropdown:hover .dropdown-content { display: block; }
-    .container { padding: 20px; }
-  </style>
-</head>
-<body>
-  <!-- Navbar -->
-  <nav>
-    <div class="logo">Obertini Properties</div>
-    <div class="menu">
-      <div class="dropdown">
-        <a href="#">Available Properties</a>
-        <div class="dropdown-content">
-          <a href="#">123 Main St - Apartment 1</a>
-          <a href="#">456 Oak St - Apartment 2</a>
-          <a href="#">789 Pine St - Apartment 3</a>
-        </div>
-      </div>
-      <a href="portal.html">Login</a>
-    </div>
-  </nav>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Obertini Properties</title>
 
-  <!-- Main content -->
-  <div class="container">
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+  }
+
+  nav {
+    background: #003f7d;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  nav button {
+    background: white;
+    border: none;
+    padding: 8px 14px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 6px;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 60px auto;
+    background: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+
+  .btn {
+    margin-top: 15px;
+    padding: 10px 15px;
+    border: none;
+    background: #0b66c3;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 6px;
+    width: 100%;
+  }
+
+  .error { color: red; margin-top: 10px; }
+</style>
+</head>
+
+<body>
+
+<nav>
+  <div><strong>Obertini Properties</strong></div>
+  <button onclick="showSection('login')">Login</button>
+</nav>
+
+<div class="container">
+
+  <!-- HOME SECTION -->
+  <div id="home" class="section active">
     <h1>Welcome to Obertini Properties</h1>
-    <p>We offer high-quality rental properties with easy online management for tenants.</p>
-    <p>Explore available apartments using the drop-down menu above.</p>
+    <p>We offer high-quality rental properties with easy online management.</p>
+    <p>Click Login above to access your tenant portal.</p>
   </div>
+
+  <!-- LOGIN SECTION -->
+  <div id="login" class="section">
+    <h2>Login / Sign Up</h2>
+
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+
+    <button class="btn" onclick="login()">Login</button>
+    <button class="btn" onclick="signup()">Sign Up</button>
+
+    <p class="error" id="errorMsg"></p>
+  </div>
+
+</div>
+
+<script type="module">
+
+  // 🔥 PASTE YOUR FIREBASE CONFIG HERE
+  const firebaseConfig = {
+    apiKey: "AIzaSyB3kErIN60aZvBsiS5OVZOY1cyBLM0x5d8",
+    authDomain: "obertini-properties-portal.firebaseapp.com",
+    projectId: "obertini-properties-portal",
+    storageBucket: "obertini-properties-portal.firebasestorage.app",
+    messagingSenderId: "421383813700",
+    appId: "1:421383813700:web:f4c34678adf4e3a7435a11"
+  };
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } 
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  window.showSection = function(id) {
+    document.querySelectorAll(".section").forEach(sec => {
+      sec.classList.remove("active");
+    });
+    document.getElementById(id).classList.add("active");
+  }
+
+  window.login = async function() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      window.location.href = "portal.html";
+    } catch (error) {
+      document.getElementById("errorMsg").innerText = error.message;
+    }
+  }
+
+  window.signup = async function() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      window.location.href = "portal.html";
+    } catch (error) {
+      document.getElementById("errorMsg").innerText = error.message;
+    }
+  }
+
+</script>
+
 </body>
 </html>
-
