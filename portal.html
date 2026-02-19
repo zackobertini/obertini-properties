@@ -1,69 +1,255 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Obertini Properties Tenant Portal</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    nav { margin-bottom: 20px; }
-    nav button { margin-right: 10px; padding: 10px 15px; cursor: pointer; }
-    section { display: none; margin-top: 20px; }
-    section.active { display: block; }
-    #message { margin-top: 15px; color: green; }
-    #error { margin-top: 15px; color: red; }
+    :root{
+      --bg:#f4f6f9;
+      --card:#ffffff;
+      --blue:#0b66c3;
+      --blue-dark:#003f7d;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --danger:#b91c1c;
+      --success:#065f46;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:16px;
+      color:var(--text);
+    }
+    .app{
+      width:min(1000px, 100%);
+      height:min(650px, 100vh);
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,.08);
+      display:flex;
+      flex-direction:column;
+    }
+    .header{
+      background:var(--blue-dark);
+      color:#fff;
+      padding:20px 18px;
+      font-size:32px;
+      font-weight:800;
+      text-align:center;
+    }
+    .main{
+      flex:1;
+      display:flex;
+      min-height:0;
+    }
+    .sidebar{
+      width:240px;
+      background:var(--blue);
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .navbtn{
+      border:0;
+      background:#fff;
+      cursor:pointer;
+      font-weight:800;
+      padding:12px 10px;
+      border-radius:10px;
+      text-align:left;
+    }
+    .navbtn.active{
+      outline:3px solid rgba(255,255,255,.55);
+      background:#eef6ff;
+    }
+    .navbtn.logout{
+      margin-top:auto;
+      background:#fee2e2;
+      color:#991b1b;
+    }
+    .content{
+      flex:1;
+      padding:22px;
+      overflow:auto;
+    }
+    .topline{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+    .small{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .pill{
+      background:#eef2ff;
+      color:#1e40af;
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:12px;
+    }
+    .panel{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:16px;
+      background:#fff;
+    }
+    h2{
+      margin:0 0 10px 0;
+      font-size:24px;
+    }
+    .btn{
+      border:0;
+      border-radius:10px;
+      padding:12px 14px;
+      cursor:pointer;
+      font-weight:900;
+      background:#111827;
+      color:#fff;
+    }
+    .btn:disabled{
+      opacity:.6;
+      cursor:not-allowed;
+    }
+    .status{
+      margin-top:10px;
+      font-size:14px;
+      font-weight:700;
+    }
+    .status.err{ color:var(--danger); }
+    .status.ok{ color:var(--success); }
+
+    label{display:block; font-weight:800; margin:10px 0 6px;}
+    input, select, textarea{
+      width:100%;
+      padding:10px 12px;
+      border:1px solid #d1d5db;
+      border-radius:10px;
+      font-size:14px;
+    }
+    textarea{ min-height:110px; resize:vertical; }
+
+    .section{ display:none; }
+    .section.active{ display:block; }
   </style>
 </head>
+
 <body>
-  <h1>Welcome to Obertini Properties Tenant Portal</h1>
+  <div class="app">
+    <div class="header">Obertini Properties Tenant Portal</div>
 
-  <!-- Tenant login form -->
-  <div id="login-section">
-    <h2>Tenant Login / Sign Up</h2>
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <button onclick="signup()">Sign Up</button>
-    <p id="login-message"></p>
+    <div class="main">
+      <div class="sidebar">
+        <button class="navbtn active" data-tab="rent">Pay Rent</button>
+        <button class="navbtn" data-tab="maint">Maintenance</button>
+        <button class="navbtn" data-tab="lease">View Lease</button>
+        <button class="navbtn" data-tab="sign">Sign Lease</button>
+        <button class="navbtn logout" id="logoutBtn">Logout</button>
+      </div>
+
+      <div class="content">
+        <div class="topline">
+          <div>
+            <div style="font-weight:900;">Signed in</div>
+            <div class="small" id="userLine">Checking login…</div>
+          </div>
+          <div class="pill" id="uidPill">UID: —</div>
+        </div>
+
+        <!-- PAY RENT -->
+        <div class="panel section active" id="sec-rent">
+          <h2>Pay Rent</h2>
+          <div class="small">Click below to pay rent via Stripe Checkout.</div>
+          <div style="margin-top:14px;">
+            <button class="btn" id="payBtn">Pay Rent Now</button>
+            <div class="status" id="payStatus"></div>
+          </div>
+        </div>
+
+        <!-- MAINTENANCE -->
+        <div class="panel section" id="sec-maint">
+          <h2>Maintenance Request</h2>
+          <div class="small">Submit a maintenance request.</div>
+
+          <form id="maintForm" style="margin-top:12px;">
+            <label for="mCategory">Category</label>
+            <select id="mCategory" required>
+              <option value="Plumbing">Plumbing</option>
+              <option value="Electrical">Electrical</option>
+              <option value="HVAC">HVAC</option>
+              <option value="Appliance">Appliance</option>
+              <option value="Pest">Pest</option>
+              <option value="Other">Other</option>
+            </select>
+
+            <label for="mPriority">Priority</label>
+            <select id="mPriority" required>
+              <option value="Normal">Normal</option>
+              <option value="Urgent">Urgent</option>
+            </select>
+
+            <label for="mDesc">Description</label>
+            <textarea id="mDesc" required placeholder="Describe the issue…"></textarea>
+
+            <button class="btn" type="submit">Submit Request</button>
+            <div class="status" id="mStatus"></div>
+          </form>
+        </div>
+
+        <!-- VIEW LEASE -->
+        <div class="panel section" id="sec-lease">
+          <h2>View Lease</h2>
+          <div class="small">Add your lease PDF link (later we can load it from Firestore).</div>
+
+          <div style="margin-top:12px;">
+            <a id="leaseLink" href="#" target="_blank" rel="noopener noreferrer" style="display:none; font-weight:900;">
+              Open Lease PDF
+            </a>
+            <div class="status" id="leaseStatus"></div>
+          </div>
+        </div>
+
+        <!-- SIGN LEASE -->
+        <div class="panel section" id="sec-sign">
+          <h2>Sign Lease</h2>
+          <div class="small">Basic typed signature (we can upgrade to DocuSign later).</div>
+
+          <label for="sigName">Full Name</label>
+          <input id="sigName" placeholder="Type your full legal name" />
+
+          <label style="margin-top:10px;">
+            <input type="checkbox" id="sigAgree" />
+            I agree to the lease terms and confirm my intent to sign.
+          </label>
+
+          <button class="btn" id="signBtn">Sign</button>
+          <div class="status" id="signStatus"></div>
+        </div>
+
+      </div>
+    </div>
   </div>
 
-  <!-- Tenant dashboard -->
-  <div id="dashboard" style="display:none;">
-    <nav>
-      <button onclick="showTab('pay-rent')">Pay Rent</button>
-      <button onclick="showTab('maintenance')">Maintenance Request</button>
-      <button onclick="showTab('view-lease')">View Lease</button>
-      <button onclick="showTab('sign-lease')">Sign New Lease</button>
-    </nav>
-
-    <section id="pay-rent">
-      <h2>Pay Rent</h2>
-      <button onclick="payRent()">Pay Rent Now</button>
-      <p id="message"></p>
-      <p id="error"></p>
-    </section>
-
-    <section id="maintenance">
-      <h2>Maintenance Request</h2>
-      <p>Feature coming soon!</p>
-    </section>
-
-    <section id="view-lease">
-      <h2>View Lease</h2>
-      <p>Feature coming soon!</p>
-    </section>
-
-    <section id="sign-lease">
-      <h2>Sign New Lease</h2>
-      <p>Feature coming soon!</p>
-    </section>
-  </div>
-
-  <!-- Firebase script -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-
-    // Firebase configuration
+    // =========================
+    // 1) FIREBASE CONFIG (PASTE HERE)
+    // Firebase Console → Project settings → Your apps (Web) → Config
+    // =========================
     const firebaseConfig = {
       apiKey: "AIzaSyB3kErIN60aZvBsiS5OVZOY1cyBLM0x5d8",
       authDomain: "obertini-properties-portal.firebaseapp.com",
@@ -73,88 +259,198 @@
       appId: "1:421383813700:web:f4c34678adf4e3a7435a11"
     };
 
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    // Optional Firestore (for maintenance/signature). If you don’t want DB storage yet, tell me.
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    // Login function
-    window.login = function() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const loginMsg = document.getElementById("login-message");
+    const $ = (id) => document.getElementById(id);
 
-      if (!email || !password) {
-        loginMsg.innerText = "Please enter email and password.";
-        return;
-      }
-
-      signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          loginMsg.innerText = "Logged in successfully!";
-          document.getElementById("login-section").style.display = "none";
-          document.getElementById("dashboard").style.display = "block";
-          showTab('pay-rent'); // default tab
-        })
-        .catch((error) => { loginMsg.innerText = error.message; });
-    };
-
-    // Signup function
-    window.signup = function() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const loginMsg = document.getElementById("login-message");
-
-      if (!email || !password) {
-        loginMsg.innerText = "Please enter email and password.";
-        return;
-      }
-
-      createUserWithEmailAndPassword(auth, email, password)
-        .then(() => loginMsg.innerText = "Account created! You can now log in.")
-        .catch((error) => loginMsg.innerText = error.message);
-    };
-
-    // Tab switching
-    function showTab(tabId) {
-      document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      document.getElementById('message').innerText = '';
-      document.getElementById('error').innerText = '';
+    function setStatus(el, msg, ok=true){
+      el.textContent = msg;
+      el.className = "status " + (ok ? "ok" : "err");
     }
 
-    // Stripe Pay Rent function
-    async function payRent() {
-      const message = document.getElementById('message');
-      const error = document.getElementById('error');
+    // =========================
+    // 2) AUTH GUARD
+    // =========================
+    let currentUser = null;
 
-      message.innerText = '';
-      error.innerText = '';
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "/index.html";
+        return;
+      }
+      currentUser = user;
+      $("userLine").textContent = user.email ? user.email : "Signed in";
+      $("uidPill").textContent = `UID: ${user.uid}`;
+      initLeaseLink();
+    });
 
+    // =========================
+    // 3) TABS
+    // =========================
+    const sections = {
+      rent: $("sec-rent"),
+      maint: $("sec-maint"),
+      lease: $("sec-lease"),
+      sign: $("sec-sign"),
+    };
+
+    function showTab(key){
+      document.querySelectorAll(".navbtn").forEach(b => b.classList.remove("active"));
+      document.querySelector(`.navbtn[data-tab="${key}"]`)?.classList.add("active");
+
+      Object.values(sections).forEach(s => s.classList.remove("active"));
+      sections[key].classList.add("active");
+    }
+
+    document.querySelectorAll(".navbtn[data-tab]").forEach(btn => {
+      btn.addEventListener("click", () => showTab(btn.dataset.tab));
+    });
+
+    // =========================
+    // 4) LOGOUT
+    // =========================
+    $("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "/index.html";
+    });
+
+    // =========================
+    // 5) PAY RENT (Stripe Checkout)
+    // Handles either { url } OR legacy { id }
+    // =========================
+    $("payBtn").addEventListener("click", async () => {
       try {
-        // ⚠️ Replace with your Stripe publishable key
-        const stripe = Stripe('pk_test_51T2JrFRpNMZCmY3rxInmimKUuQZ7FGZc5EFdn9pTsLtFYRxoF68GLiIHf5yqCNMAxoU825vaui6IhSCcuGNDeo3Z0058hSu3x7');
+        $("payBtn").disabled = true;
+        setStatus($("payStatus"), "Starting payment…", true);
 
-        const response = await fetch('/api/create-checkout-session', { method: 'POST' });
-        const data = await response.json();
+        const resp = await fetch("/api/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            // Optional data for future use
+            uid: currentUser?.uid || null,
+            email: currentUser?.email || null
+          })
+        });
 
-        if (data.error) {
-          error.innerText = data.error;
+        // If the API fails, show the real error
+        const text = await resp.text();
+        let data = {};
+        try { data = JSON.parse(text); } catch { /* keep {} */ }
+
+        if (!resp.ok) {
+          const msg = data?.error || `Server error (${resp.status}).`;
+          setStatus($("payStatus"), msg, false);
+          $("payBtn").disabled = false;
           return;
         }
 
-        const result = await stripe.redirectToCheckout({ sessionId: data.id });
-        if (result.error) {
-          error.innerText = result.error.message;
+        // Preferred: API returns URL
+        if (data?.url) {
+          window.location.href = data.url;
+          return;
         }
-      } catch (err) {
-        console.error(err);
-        error.innerText = 'Failed to initiate payment. Please try again.';
+
+        // Legacy: API returns { id } (session ID)
+        if (data?.id) {
+          // If your API returns only the ID, we can't redirect without Stripe.js OR a URL.
+          // So we show a helpful message telling you exactly what to change.
+          setStatus(
+            $("payStatus"),
+            "Payment session created but no URL returned. Update your API to return { url: session.url }.",
+            false
+          );
+          $("payBtn").disabled = false;
+          return;
+        }
+
+        setStatus($("payStatus"), "Failed to initiate payment. Please try again.", false);
+        $("payBtn").disabled = false;
+
+      } catch (e) {
+        setStatus($("payStatus"), "Failed to initiate payment. Please try again.", false);
+        $("payBtn").disabled = false;
+      }
+    });
+
+    // =========================
+    // 6) MAINTENANCE (Firestore)
+    // =========================
+    $("maintForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      try {
+        setStatus($("mStatus"), "Submitting…", true);
+
+        await addDoc(collection(db, "maintenanceRequests"), {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          category: $("mCategory").value,
+          priority: $("mPriority").value,
+          description: $("mDesc").value.trim(),
+          status: "submitted",
+          createdAt: serverTimestamp()
+        });
+
+        $("mDesc").value = "";
+        setStatus($("mStatus"), "✅ Request submitted.", true);
+      } catch (e2) {
+        setStatus($("mStatus"), "Error: " + (e2?.message || e2), false);
+      }
+    });
+
+    // =========================
+    // 7) VIEW LEASE (placeholder)
+    // =========================
+    function initLeaseLink(){
+      const hardcodedLeaseUrl = ""; // paste your lease PDF URL here if you have one
+      if (hardcodedLeaseUrl) {
+        $("leaseLink").href = hardcodedLeaseUrl;
+        $("leaseLink").style.display = "inline-block";
+        setStatus($("leaseStatus"), "Lease ready.", true);
+      } else {
+        setStatus($("leaseStatus"), "No lease link set yet.", false);
       }
     }
 
-    window.payRent = payRent;
-  </script>
+    // =========================
+    // 8) SIGN LEASE (Firestore)
+    // =========================
+    $("signBtn").addEventListener("click", async () => {
+      if (!currentUser) return;
 
-  <!-- Stripe JS -->
-  <script src="https://js.stripe.com/v3/"></script>
+      const name = $("sigName").value.trim();
+      const agree = $("sigAgree").checked;
+
+      if (!name) return setStatus($("signStatus"), "Please type your full name.", false);
+      if (!agree) return setStatus($("signStatus"), "Please check the agreement box.", false);
+
+      try {
+        setStatus($("signStatus"), "Saving signature…", true);
+
+        await addDoc(collection(db, "leaseSignatures"), {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name,
+          agreed: true,
+          signedAt: serverTimestamp(),
+          userAgent: navigator.userAgent
+        });
+
+        setStatus($("signStatus"), "✅ Signed. Thank you!", true);
+      } catch (e) {
+        setStatus($("signStatus"), "Error saving signature: " + (e?.message || e), false);
+      }
+    });
+  </script>
 </body>
 </html>

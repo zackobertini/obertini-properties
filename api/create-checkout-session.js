@@ -1,40 +1,60 @@
 // api/create-checkout-session.js
-import Stripe from 'stripe';
+import Stripe from "stripe";
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).send({ error: 'Method not allowed' });
-    return;
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const stripe = new Stripe('sk_test_51T2JrFRpNMZCmY3ribZByERvaokhKQFvS0HV5Z4k2i3NDzTq1hPtJjybg2OvgpDYY4DAONkFBpGlLR3BNbTcdd3p00zHQ7ofnN', {
-      apiVersion: '2022-11-15',
+    // ✅ DO NOT hardcode keys — use Vercel env var
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2022-11-15",
     });
 
-    // Create a checkout session
+    // ✅ Set your NET rent here (what you want to receive)
+    const netRentCents = 100000; // $1000.00
+
+    // ✅ Stripe card fee estimate (US): 2.9% + 30¢
+    const percentFee = 0.029;
+    const fixedFeeCents = 30;
+
+    // ✅ Gross up so you still net the rent after fees
+    // gross = ceil((net + fixed) / (1 - percent))
+    const grossCents = Math.ceil((netRentCents + fixedFeeCents) / (1 - percentFee));
+    const processingFeeCents = grossCents - netRentCents;
+
+    const origin = req.headers.origin || "https://www.obertiniproperties.com";
+
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      mode: "payment",
+      payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
-            currency: 'usd',
-            product_data: {
-              name: 'Rent Payment',
-            },
-            unit_amount: 1000, // Amount in cents ($10.00) — update to your rent
+            currency: "usd",
+            product_data: { name: "Monthly Rent" },
+            unit_amount: netRentCents,
+          },
+          quantity: 1,
+        },
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { name: "Processing Fee" },
+            unit_amount: processingFeeCents,
           },
           quantity: 1,
         },
       ],
-      mode: 'payment',
-      success_url: `${req.headers.origin}?success=true`,
-      cancel_url: `${req.headers.origin}?canceled=true`,
+      success_url: `${origin}/portal.html?paid=1`,
+      cancel_url: `${origin}/portal.html?paid=0`,
     });
 
-    res.status(200).json({ id: session.id });
+    // ✅ IMPORTANT: return the URL so the browser can redirect
+    return res.status(200).json({ url: session.url });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to create Stripe checkout session' });
+    console.error("Stripe checkout session error:", err);
+    return res.status(500).json({ error: "Failed to create Stripe checkout session" });
   }
 }
